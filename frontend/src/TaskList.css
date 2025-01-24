@@ -1,0 +1,33 @@
+.tasklist-input {
+    border: none;
+    background: transparent;
+    border-bottom: 1px solid #fff;
+}
+
+.tasklist-input:focus {
+    outline: none;
+    border-bottom: 2px solid #fff;
+}
+
+.task-list {
+    list-style: circle;
+    line-height: 1.7;
+    padding-left: 1.1em;
+}
+.task-list-container {
+    color: var(--color-light);
+}
+.task-list li {
+    text-align: start;
+}
+
+.task-list-link {
+    color: #FFF;
+}
+.task-list-link:active {
+    font-weight: bold;
+}
+
+.task-list-link:hover {
+    color: rgba(255, 255, 255, 0.63)
+}

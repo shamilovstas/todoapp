@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+  proxy:
+    build: ./proxy
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+  database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: "somepass"
+    volumes:
+      - todoapp-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  backend:
+    build: ./backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - type: bind
+        source: ./backend/database/migrations
+        target: /migrations
+    command: [ "-path", "/migrations", "-database",  "postgres://postgres:somepass@database:5432/postgres?sslmode=disable", "up" ]
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  todoapp-data:
+

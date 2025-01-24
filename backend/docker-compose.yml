@@ -1,0 +1,32 @@
+services:
+  database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: "somepass"
+    volumes:
+      - todoapp-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  backend:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - type: bind
+        source: ./database/migrations
+        target: /migrations
+    command: [ "-path", "/migrations", "-database",  "postgres://postgres:somepass@database:5432/postgres?sslmode=disable", "up" ]
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  todoapp-dev:

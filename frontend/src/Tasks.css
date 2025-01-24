@@ -1,0 +1,17 @@
+.task {
+    background-color: var(--color-light);
+    --spacer: 16px;
+    color: var(--color-dark);
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e4e4e4;
+    padding: var(--spacer);
+}
+
+.task-content {
+    padding: var(--spacer);
+}
