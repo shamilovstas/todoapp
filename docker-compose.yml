@@ -1,8 +1,15 @@
-version: "3.9"
-
 services:
   frontend:
     build: ./frontend
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /app/src
+          ignore: 
+            - ./frontend/node_modules/
+        - action: rebuild
+          path: ./frontend/package.json
   proxy:
     build: ./proxy
     ports:
