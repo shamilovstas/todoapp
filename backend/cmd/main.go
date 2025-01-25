@@ -167,6 +167,37 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PUT" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := updateTask(w, r); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func updateTask(w http.ResponseWriter, r *http.Request) error {
+	var task tasks.Task
+
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		return err
+	}
+
+	id, err := taskRepository.UpdateTask(context.Background(), task)
+	if err != nil {
+		return err
+	}
+	task.Id = id
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(task); err != nil {
+		return err
+	}
+	return nil
+}
+
 func ignoreCors(n http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
@@ -204,6 +235,7 @@ func main() {
 	mux.HandleFunc("/tasklists", tasklistsHandler)
 	mux.HandleFunc("/tasklists/{id}/tasks", createTaskHandler)
 	mux.HandleFunc("/tasklists/{id}", getTaskListHandler)
+	mux.HandleFunc("/tasks", updateTaskHandler)
 	if err := http.ListenAndServe(":8080", ignoreCors(mux)); err != nil {
 		fmt.Fprintf(os.Stderr, "couldn't start server: %v\n", err)
 		os.Exit(1)

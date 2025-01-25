@@ -1,8 +1,9 @@
 package tasks
 
 type Task struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	IsCompleted bool   `json:"completed"`
 }
 
 type TaskList struct {
@@ -11,8 +12,8 @@ type TaskList struct {
 	Tasks []Task `json:"tasks"`
 }
 
-func NewTask(id int, name string) *Task {
-	return &Task{Id: id, Name: name}
+func NewTask(id int, name string, completed bool) *Task {
+	return &Task{Id: id, Name: name, IsCompleted: completed}
 }
 
 func NewTaskList(id int, name string) *TaskList {

@@ -84,7 +84,7 @@ func (repo TaskRepository) IsTaskListExists(id int) (bool, error) {
 
 func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, error) {
 	args := pgx.NamedArgs{"listId": listId}
-	query := `SELECT id, name FROM tasks WHERE tasks.listId=@listId`
+	query := `SELECT id, name, completed FROM tasks WHERE tasks.listId=@listId`
 	rows, err := repo.db.Query(ctx, query, args)
 	defer rows.Close()
 	if err != nil {
@@ -94,22 +94,42 @@ func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, er
 	for rows.Next() {
 		var id int
 		var name string
+		var completed bool
 
-		if err := rows.Scan(&id, &name); err != nil {
+		if err := rows.Scan(&id, &name, &completed); err != nil {
 			return nil, err
 		}
 
-		task := NewTask(id, name)
+		task := NewTask(id, name, completed)
 		taskArray = append(taskArray, *task)
 	}
 	return taskArray, nil
 }
 
 func (repo TaskRepository) InsertTask(ctx context.Context, task Task, listId int) (int, error) {
-	query := `INSERT INTO tasks (name, listId) VALUES (@taskName, @listId) RETURNING id`
+	query := `INSERT INTO tasks (name, listId, completed) VALUES (@taskName, @listId, @isCompleted) RETURNING id`
 	args := pgx.NamedArgs{
-		"taskName": task.Name,
-		"listId":   listId,
+		"taskName":    task.Name,
+		"listId":      listId,
+		"isCompleted": task.IsCompleted,
+	}
+
+	row := repo.db.QueryRow(ctx, query, args)
+	insertedId := -1
+
+	if err := row.Scan(&insertedId); err != nil {
+		return -1, err
+	}
+
+	return insertedId, nil
+}
+
+func (repo TaskRepository) UpdateTask(ctx context.Context, task Task) (int, error) {
+	query := `UPDATE tasks SET name=@taskName, completed=@isCompleted WHERE tasks.id=@taskId RETURNING id`
+	args := pgx.NamedArgs{
+		"taskName":    task.Name,
+		"isCompleted": task.IsCompleted,
+		"taskId":      task.Id,
 	}
 
 	row := repo.db.QueryRow(ctx, query, args)
