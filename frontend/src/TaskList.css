@@ -1,29 +1,41 @@
+.task-list-container {
+    color: var(--color-light);
+    --marker-width: 20px
+}
+
 .tasklist-input {
-    border: none;
-    background: transparent;
-    border-bottom: 1px solid #fff;
+    border-color: #ffffff;
 }
 
 .tasklist-input:focus {
     outline: none;
-    border-bottom: 2px solid #fff;
+    border-bottom: 2px solid var(--color-light);
+}
+
+.plus-input::before {
+    width: var(--marker-width);
 }
 
 .task-list {
-    list-style: circle;
     line-height: 1.7;
-    padding-left: 1.1em;
+    padding-left: 0;
 }
-.task-list-container {
-    color: var(--color-light);
-}
+
 .task-list li {
-    text-align: start;
+    list-style-type: none;
+}
+
+.task-list li::before {
+    width: var(--marker-width);
+    display: inline-block;
+    content: "\25CB";
+    text-align: center;
 }
 
 .task-list-link {
     color: #FFF;
 }
+
 .task-list-link:active {
     font-weight: bold;
 }

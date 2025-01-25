@@ -15,6 +15,7 @@
   --color-light: #f4f4f4;
   --color-dark: #333;
   --color-primary: #2f70cc;
+  --spacer: 8px;
 }
 
 a {

@@ -13,7 +13,7 @@ function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
 
     const placeholder = "Enter task"
     return <input
-        className="tasklist-input"
+        className="tasklist-input input-light"
         placeholder={placeholder}
         onFocus={(e) => e.target.placeholder = ""}
         onBlur={(e) => e.target.placeholder = placeholder}
@@ -73,7 +73,9 @@ function TaskListComponent() {
     return <div className="task-list-container">
         <h1>My lists</h1>
         <ul className="task-list"><List list={list}/></ul>
-        <TaskListInput input={input} handleChange={handleInput} onKeyUp={addTaskList}/>
+        <div className="plus-input">
+            <TaskListInput input={input} handleChange={handleInput} onKeyUp={addTaskList}/>
+        </div>
     </div>
 }
 

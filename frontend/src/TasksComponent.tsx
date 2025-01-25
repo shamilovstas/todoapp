@@ -5,7 +5,7 @@ import {Task, TaskList, apiUrl} from "./types.ts";
 
 function RenderedTasks({list}: { list: Task[] }) {
     return list.map((item: Task) => {
-        return <li key={item.id}>{item.name}</li>
+        return <li className="task-item" key={item.id}>{item.name}</li>
     });
 }
 
@@ -17,6 +17,7 @@ interface TaskInputProps {
 
 function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
     return <input
+        className="input-dark"
         onChange={handleChange}
         onKeyUp={onKeyUp}
         value={input}/>
@@ -68,12 +69,14 @@ function TasksComponent() {
         </div>
 
         <div className="task-content">
-            <ul>
+            <ul className="task-list">
                 <RenderedTasks list={taskList.tasks}/>
             </ul>
         </div>
 
-        <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
+        <div className="plus-input">
+            <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
+        </div>
     </div>
 }
 
