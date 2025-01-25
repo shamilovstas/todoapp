@@ -1,45 +1,15 @@
-.task-list-container {
-    color: var(--color-light);
-    --marker-width: 20px
-}
-
-.tasklist-input {
-    border-color: #ffffff;
-}
-
-.tasklist-input:focus {
-    outline: none;
-    border-bottom: 2px solid var(--color-light);
-}
-
-.plus-input::before {
-    width: var(--marker-width);
+.tasklist-container {
+    --color: var(--color-dark);
+    color: var(--color);
+    grid-area: lists;
 }
 
 .task-list {
     line-height: 1.7;
-    padding-left: 0;
+    font-size: 1rem;
+    list-style: circle inside;
 }
 
-.task-list li {
-    list-style-type: none;
-}
-
-.task-list li::before {
-    width: var(--marker-width);
-    display: inline-block;
-    content: "\25CB";
-    text-align: center;
-}
-
-.task-list-link {
-    color: #FFF;
-}
-
-.task-list-link:active {
-    font-weight: bold;
-}
-
-.task-list-link:hover {
-    color: rgba(255, 255, 255, 0.63)
+.active {
+    font-weight: 700;
 }

@@ -1,38 +1,16 @@
-#root {
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-input {
-  border: none;
-  background: transparent;
-  border-bottom: 1px solid #ffffff;
-  font-size: 1rem;
-  padding: 4px 0;
-}
-
-.input-light {
-  border-color: var(--color-light);
-}
-
-.input-dark {
-  border-color: var(--color-dark);
-}
-
 .container {
   display: grid;
-  grid-template-columns: 1fr 4fr;
+  grid:
+    "header header header header" auto
+    "...... lists  task   ......" auto /
+    1fr minmax(150px, 400px) minmax(350px, 750px) 1fr;
 }
 
-.plus-input {
-  display: inline-block;
-}
-
-.plus-input::before {
-  display: inline-block;
-  width: 40px;
+.header {
+  grid-area: header;
   text-align: center;
-  content: "\002B";
-  font-weight: bold;
-  font-size: 22px;
+  font-size: calc(3vw + 2rem);
+  color: rgba(0,0,0,0.2);
+  font-weight: 900;
+  opacity: 0.4;
 }

@@ -1,6 +1,6 @@
 import './TaskList.css'
 import React, {ChangeEvent, useEffect, useState} from "react";
-import {Link} from "react-router";
+import {NavLink} from "react-router";
 import {TaskList, apiUrl} from "./types.ts";
 
 interface InputProps {
@@ -15,8 +15,8 @@ function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
     return <input
         className="tasklist-input input-light"
         placeholder={placeholder}
-        onFocus={(e) => e.target.placeholder = ""}
-        onBlur={(e) => e.target.placeholder = placeholder}
+        // onFocus={(e) => e.target.placeholder = ""}
+        // onBlur={(e) => e.target.placeholder = placeholder}
         type="text"
         onChange={handleChange}
         onKeyUp={onKeyUp}
@@ -25,7 +25,10 @@ function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
 
 function List({list}: { list: TaskList[] }) {
     return list.map((item) => <li key={item.id}>
-        <Link className="task-list-link" to={`/tasklists/${item.id}`}>{item.name}</Link>
+        <NavLink
+            className={({isActive}) => ["task-list-lint", isActive ? "active" : ""].join(" ")}
+            to={`/tasklists/${item.id}`}>{item.name}
+        </NavLink>
     </li>)
 }
 
@@ -70,7 +73,7 @@ function TaskListComponent() {
         }
     }
 
-    return <div className="task-list-container">
+    return <div className="tasklist-container">
         <h1>My lists</h1>
         <ul className="task-list"><List list={list}/></ul>
         <div className="plus-input">

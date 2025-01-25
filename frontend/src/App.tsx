@@ -6,6 +6,7 @@ import {MemoryRouter, Navigate, Route, Routes} from "react-router";
 function App() {
     return <div className="container">
         <MemoryRouter>
+            <h1 className="header">Stuff I want to do</h1>
             <TaskListComponent/>
             <Routes>
                 <Route path="/" element={<Navigate to={`/tasklists/1`} replace /> }/>

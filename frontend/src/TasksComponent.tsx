@@ -62,7 +62,7 @@ function TasksComponent() {
             })
             .catch(error => console.log(error))
     }, [id])
-    return <div className="task">
+    return <div className="task-container">
         <div className="task-header">
             <h2>{taskList.name}</h2>
             <p>{taskList.tasks.length} tasks remaining</p>
