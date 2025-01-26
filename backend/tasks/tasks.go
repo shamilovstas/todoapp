@@ -19,3 +19,13 @@ func NewTask(id int, name string, completed bool) *Task {
 func NewTaskList(id int, name string) *TaskList {
 	return &TaskList{Id: id, Name: name}
 }
+
+func (tasklist TaskList) GetRemainingTasksCount() int {
+	count := 0
+	for _, task := range tasklist.Tasks {
+		if !task.IsCompleted {
+			count++
+		}
+	}
+	return count
+}

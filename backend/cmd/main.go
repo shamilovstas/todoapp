@@ -19,6 +19,13 @@ type TaskListResponse struct {
 	TaskLists []tasks.TaskList `json:"taskLists"`
 }
 
+type TasksResponse struct {
+	Id             int          `json:"id"`
+	Name           string       `json:"name"`
+	Tasks          []tasks.Task `json:"tasks"`
+	RemainingTasks int          `json:"remaining"`
+}
+
 func tasklistsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -63,13 +70,15 @@ func getTaskList(w http.ResponseWriter, listId int) error {
 	if err != nil {
 		return err
 	}
-
 	taskList.Tasks = taskArray
+	response := TasksResponse{
+		Id:             taskList.Id,
+		Name:           taskList.Name,
+		Tasks:          taskList.Tasks,
+		RemainingTasks: taskList.GetRemainingTasksCount(),
+	}
 
-	b, _ := json.Marshal(taskList)
-	log.Println(string(b))
-
-	if err := json.NewEncoder(w).Encode(taskList); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		return err
 	}
 	return nil
