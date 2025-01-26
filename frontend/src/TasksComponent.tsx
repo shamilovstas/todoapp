@@ -3,9 +3,23 @@ import React, {ChangeEvent, useEffect, useState} from "react";
 import {useParams} from "react-router";
 import {Task, TaskList, apiUrl} from "./types.ts";
 
-function RenderedTasks({list}: { list: Task[] }) {
-    return list.map((item: Task) => {
-        return <li className="task-item" key={item.id}>{item.name}</li>
+interface TaskListProps {
+    taskList: TaskList,
+    handleToggle: (task: Task, isCompleted: boolean) => void
+}
+
+function RenderedTasks({taskList, handleToggle}: TaskListProps) {
+
+    return taskList.tasks.map((item: Task) => {
+        return <li className="task-item" key={item.id}>
+            <input
+                type="checkbox"
+                id={`checkbox-${item.id}`}
+                checked={item.completed}
+                onChange={(e) => handleToggle(item, e.target.checked)}
+            />
+            <label htmlFor={`checkbox-${item.id}`}>{item.name}</label>
+        </li>
     });
 }
 
@@ -62,6 +76,30 @@ function TasksComponent() {
             })
             .catch(error => console.log(error))
     }, [id])
+
+    const handleToggle = (oldTask: Task, isCompleted: boolean) => {
+        oldTask.completed = isCompleted;
+
+        fetch(apiUrl + "/tasks", {
+            method: "PUT",
+            body: JSON.stringify(oldTask),
+            headers: {"Content-Type": "application/json"}
+        })
+            .then(() => {
+                const updatedTasks = taskList.tasks.map(task => {
+                    if (task.id === task.id) {
+                        return {...task, completed: isCompleted}
+                    } else {
+                        return task
+                    }
+                })
+                const newTaskList = {...taskList, updatedTasks}
+                setTaskList(newTaskList)
+            })
+            .catch(e => console.log(e))
+
+    }
+
     return <div className="task-container">
         <div className="task-header">
             <h2>{taskList.name}</h2>
@@ -69,14 +107,16 @@ function TasksComponent() {
         </div>
 
         <div className="task-content">
-            <ul className="task-list">
-                <RenderedTasks list={taskList.tasks}/>
+            <ul className="task-items">
+                <RenderedTasks taskList={taskList} handleToggle={handleToggle}/>
             </ul>
+
+            <div className="plus-input">
+                <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
+            </div>
         </div>
 
-        <div className="plus-input">
-            <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
-        </div>
+
     </div>
 }
 

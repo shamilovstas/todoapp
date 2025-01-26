@@ -26,7 +26,7 @@ function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
 function List({list}: { list: TaskList[] }) {
     return list.map((item) => <li key={item.id}>
         <NavLink
-            className={({isActive}) => ["task-list-lint", isActive ? "active" : ""].join(" ")}
+            className={({isActive}) => ["task-list-link", isActive ? "active" : ""].join(" ")}
             to={`/tasklists/${item.id}`}>{item.name}
         </NavLink>
     </li>)

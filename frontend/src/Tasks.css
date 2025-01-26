@@ -9,3 +9,17 @@
     display: flex;
     justify-content: space-between;
 }
+
+.task-content {
+    padding: 20px;
+}
+
+.task-items {
+    line-height: 2;
+}
+
+.task-items li {
+    list-style: none;
+    border-bottom: 1px solid #e4e4e4;
+    margin: 10px 0;
+}
