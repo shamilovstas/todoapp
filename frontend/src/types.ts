@@ -8,6 +8,7 @@ export interface TaskList {
     id: number;
     name: string;
     tasks: Task[];
+    remaining: number;
 }
 
 // export const apiUrl = "http://localhost:29292";

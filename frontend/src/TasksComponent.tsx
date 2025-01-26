@@ -40,7 +40,7 @@ function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
 function TasksComponent() {
 
     const {id} = useParams()
-    const [taskList, setTaskList] = useState<TaskList>({id: -1, name: "", tasks: []});
+    const [taskList, setTaskList] = useState<TaskList>({id: -1, name: "", tasks: [], remaining: 0});
     const [input, setInput] = useState<string>('')
 
     const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
@@ -88,12 +88,20 @@ function TasksComponent() {
             .then(() => {
                 const updatedTasks = taskList.tasks.map(task => {
                     if (task.id === task.id) {
-                        return {...task, completed: isCompleted}
+                        return {...task, completed: isCompleted};
                     } else {
-                        return task
+                        return task;
                     }
                 })
-                const newTaskList = {...taskList, updatedTasks}
+
+
+                let remaining = taskList.remaining;
+                if (isCompleted) {
+                    remaining --;
+                } else {
+                    remaining ++;
+                }
+                const newTaskList = {...taskList, remaining, updatedTasks}
                 setTaskList(newTaskList)
             })
             .catch(e => console.log(e))
@@ -103,7 +111,7 @@ function TasksComponent() {
     return <div className="task-container">
         <div className="task-header">
             <h2>{taskList.name}</h2>
-            <p>{taskList.tasks.length} tasks remaining</p>
+            <p>{taskList.remaining} tasks remaining</p>
         </div>
 
         <div className="task-content">
