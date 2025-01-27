@@ -1,9 +1,9 @@
 .container {
   display: grid;
   grid:
-    "header header header header" auto
-    "...... lists  task   ......" auto /
-    1fr minmax(150px, 400px) minmax(350px, 750px) 1fr;
+    "header  header header" auto
+    "...... content ......" auto /
+    1fr minmax(600px, 1200px) 1fr;
 }
 
 .header {

@@ -1,7 +1,17 @@
 .tasklist-container {
+    grid-area: content;
+    display: flex;
+    flex-direction: row;
+}
+
+.list-container {
     --color: var(--color-dark);
     color: var(--color);
-    grid-area: lists;
+    flex: 1;
+}
+
+.details-container {
+    flex: 1;
 }
 
 .task-list {

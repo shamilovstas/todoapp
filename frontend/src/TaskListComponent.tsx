@@ -1,7 +1,8 @@
 import './TaskList.css'
 import React, {ChangeEvent, useEffect, useState} from "react";
-import {NavLink} from "react-router";
+import {Navigate, NavLink, Route, Routes} from "react-router";
 import {TaskList, apiUrl} from "./types.ts";
+import TasksComponent from "./TasksComponent.tsx";
 
 interface InputProps {
     input: string;
@@ -74,10 +75,18 @@ function TaskListComponent() {
     }
 
     return <div className="tasklist-container">
-        <h1>My lists</h1>
-        <ul className="task-list"><List list={list}/></ul>
-        <div className="plus-input">
-            <TaskListInput input={input} handleChange={handleInput} onKeyUp={addTaskList}/>
+        <div className="list-container">
+            <h1>My lists</h1>
+            <ul className="task-list"><List list={list}/></ul>
+            <div className="plus-input">
+                <TaskListInput input={input} handleChange={handleInput} onKeyUp={addTaskList}/>
+            </div>
+        </div>
+        <div className="details-container">
+            <Routes>
+                <Route path="/" element={<Navigate to={`/tasklists/1`} replace /> }/>
+                <Route path="/tasklists/:id" element={<TasksComponent/>}/>
+            </Routes>
         </div>
     </div>
 }
