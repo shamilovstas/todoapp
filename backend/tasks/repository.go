@@ -124,12 +124,12 @@ func (repo TaskRepository) InsertTask(ctx context.Context, task Task, listId int
 	return insertedId, nil
 }
 
-func (repo TaskRepository) UpdateTask(ctx context.Context, task Task) (int, error) {
+func (repo TaskRepository) UpdateTask(ctx context.Context, taskId int, task Task) (int, error) {
 	query := `UPDATE tasks SET name=@taskName, completed=@isCompleted WHERE tasks.id=@taskId RETURNING id`
 	args := pgx.NamedArgs{
 		"taskName":    task.Name,
 		"isCompleted": task.IsCompleted,
-		"taskId":      task.Id,
+		"taskId":      taskId,
 	}
 
 	row := repo.db.QueryRow(ctx, query, args)
@@ -138,6 +138,24 @@ func (repo TaskRepository) UpdateTask(ctx context.Context, task Task) (int, erro
 	if err := row.Scan(&insertedId); err != nil {
 		return -1, err
 	}
-
 	return insertedId, nil
+}
+
+func (repo TaskRepository) DeleteTask(ctx context.Context, taskId int) error {
+	query := `DELETE FROM tasks WHERE tasks.id=@taskId`
+	args := pgx.NamedArgs{
+		"taskId": taskId,
+	}
+
+	_, err := repo.db.Exec(ctx, query, args)
+	return err
+}
+
+func (repo TaskRepository) DeleteTaskList(ctx context.Context, taskListId int) error {
+	query := `DELETE FROM taskLists WHERE taskLists.id=@taskListId`
+	args := pgx.NamedArgs{
+		"taskListId": taskListId,
+	}
+	_, err := repo.db.Exec(ctx, query, args)
+	return err
 }

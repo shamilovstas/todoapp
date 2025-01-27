@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"todo-api/apperrors"
 	"todo-api/database"
 	"todo-api/tasks"
 )
@@ -64,7 +64,7 @@ func tasklistsHandler(w http.ResponseWriter, r *http.Request) {
 func getTaskList(w http.ResponseWriter, listId int) error {
 	taskList, err := taskRepository.GetTaskListById(listId)
 	if err != nil {
-		return NewHttpError(http.StatusNotFound, fmt.Errorf("task list not found: %w", err).Error())
+		return apperrors.NewHttpError(http.StatusNotFound, fmt.Errorf("task list not found: %w", err))
 	}
 	taskArray, err := taskRepository.GetTasks(context.Background(), listId)
 	if err != nil {
@@ -103,31 +103,22 @@ func postTask(w http.ResponseWriter, r *http.Request, listId int) error {
 	return nil
 }
 
-type HttpError struct {
-	Code    int
-	Message string
-}
-
-func NewHttpError(code int, message string) *HttpError {
-	return &HttpError{Code: code, Message: message}
-}
-
-func (error HttpError) Error() string {
-	return error.Message
-}
-
 func checkTaskListExists(id int) error {
 	taskListExists, err := taskRepository.IsTaskListExists(id)
 	if err != nil {
-		return NewHttpError(http.StatusInternalServerError, err.Error())
+		return apperrors.NewHttpError(http.StatusInternalServerError, err)
 	}
 	if !taskListExists {
-		return NewHttpError(http.StatusNotFound, "Task list not found")
+		return apperrors.NewHttpError(http.StatusNotFound, errors.New("task list not found"))
 	}
 	return nil
 }
 
-func getTaskListHandler(w http.ResponseWriter, r *http.Request) {
+func deleteTaskList(w http.ResponseWriter, taskListId int) error {
+	return taskRepository.DeleteTaskList(context.Background(), taskListId)
+}
+
+func taskListHandler(w http.ResponseWriter, r *http.Request) {
 	listId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
 	if idAtoiErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -136,18 +127,19 @@ func getTaskListHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := checkTaskListExists(listId); err != nil {
-		log.Printf("error: %v\n", err)
-		var herr *HttpError
-		ok := errors.As(err, &herr)
-		if ok {
-			http.Error(w, herr.Message, herr.Code)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		w.WriteHeader(http.StatusInternalServerError)
+
 	}
-	if err := getTaskList(w, listId); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+
+	switch r.Method {
+	case "GET":
+		if err := getTaskList(w, listId); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	case "DELETE":
+		if err := deleteTaskList(w, listId); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -160,14 +152,7 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := checkTaskListExists(listId); err != nil {
-		fmt.Printf("error: %v\n", err)
-		var herr *HttpError
-		ok := errors.As(err, &herr)
-		if ok {
-			http.Error(w, herr.Message, herr.Code)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	if err := postTask(w, r, listId); err != nil {
@@ -176,26 +161,33 @@ func createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateTaskHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PUT" {
+func taskHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "PUT":
+		if err := updateTask(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	case "DELETE":
+		if err := deleteTask(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	default:
 		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if err := updateTask(w, r); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
 
 func updateTask(w http.ResponseWriter, r *http.Request) error {
+	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
+	if idAtoiErr != nil {
+		return apperrors.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
+	}
 	var task tasks.Task
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		return err
 	}
 
-	id, err := taskRepository.UpdateTask(context.Background(), task)
+	id, err := taskRepository.UpdateTask(context.Background(), taskId, task)
 	if err != nil {
 		return err
 	}
@@ -205,6 +197,19 @@ func updateTask(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	return nil
+}
+
+func deleteTask(w http.ResponseWriter, r *http.Request) error {
+	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
+	if idAtoiErr != nil {
+		return apperrors.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
+	}
+
+	err := taskRepository.DeleteTask(context.Background(), taskId)
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+	}
+	return err
 }
 
 func ignoreCors(n http.Handler) http.Handler {
@@ -243,8 +248,8 @@ func main() {
 
 	mux.HandleFunc("/tasklists", tasklistsHandler)
 	mux.HandleFunc("/tasklists/{id}/tasks", createTaskHandler)
-	mux.HandleFunc("/tasklists/{id}", getTaskListHandler)
-	mux.HandleFunc("/tasks", updateTaskHandler)
+	mux.HandleFunc("/tasklists/{id}", taskListHandler)
+	mux.HandleFunc("/tasks/{id}", taskHandler)
 	if err := http.ListenAndServe(":8080", ignoreCors(mux)); err != nil {
 		fmt.Fprintf(os.Stderr, "couldn't start server: %v\n", err)
 		os.Exit(1)
