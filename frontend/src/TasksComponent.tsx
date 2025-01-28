@@ -1,15 +1,15 @@
 import './Tasks.css'
-import React, {ChangeEvent, useEffect, useState} from "react";
+import React, {ChangeEvent, useEffect, useMemo, useState} from "react";
 import {Task, TaskList, apiUrl} from "./types.ts";
 
 interface TaskListProps {
-    taskList: TaskList,
+    tasks: Task[],
     handleToggle: (task: Task, isCompleted: boolean) => void
 }
 
-function RenderedTasks({taskList, handleToggle}: TaskListProps) {
+function RenderedTasks({tasks, handleToggle}: TaskListProps) {
 
-    return taskList.tasks.map((item: Task) => {
+    return tasks.map((item: Task) => {
         return <li className="task-item" key={item.id}>
             <input
                 type="checkbox"
@@ -37,42 +37,43 @@ function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
 }
 
 interface TasksComponentProps {
-    id?: number
+    taskList: TaskList
 }
 
-function TasksComponent({id}: TasksComponentProps) {
+function TasksComponent({taskList}: TasksComponentProps) {
 
-    const [taskList, setTaskList] = useState<TaskList>({id: -1, name: "", tasks: [], remaining: 0});
+    const [tasks, setTasks] = useState<Task[]>([])
     const [input, setInput] = useState<string>('')
 
+    const remaining = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks])
+
     useEffect(() => {
-        fetch(`${apiUrl}/tasklists/${id}`)
+        fetch(`${apiUrl}/tasklists/${taskList.id}`)
             .then(res => res.json())
             .then(data => {
-                setTaskList(data)
+                setTasks(data.tasks)
             })
             .catch(error => console.log(error))
-    }, [id])
+    }, [taskList])
 
     const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value)
-
     }
+
     const saveTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key !== 'Enter') {
             return;
         }
         if (input.trim() !== '') {
             const data = {"name": input};
-            fetch(`${apiUrl}/tasklists/${id}/tasks`, {
+            fetch(`${apiUrl}/tasklists/${taskList.id}/tasks`, {
                 method: "POST",
                 body: JSON.stringify(data),
                 headers: {"Content-Type": "application/json"},
             })
                 .then(res => res.json())
                 .then(task => {
-                    taskList.tasks.push(task)
-                    setTaskList(taskList)
+                    setTasks([...tasks, task]);
                     setInput("")
                 })
                 .catch(error => console.log(error))
@@ -89,23 +90,14 @@ function TasksComponent({id}: TasksComponentProps) {
             headers: {"Content-Type": "application/json"}
         })
             .then(() => {
-                const updatedTasks = taskList.tasks.map(task => {
-                    if (task.id === task.id) {
+                const updatedTasks = tasks.map(task => {
+                    if (oldTask.id === task.id) {
                         return {...task, completed: isCompleted};
                     } else {
                         return task;
                     }
                 })
-
-
-                let remaining = taskList.remaining;
-                if (isCompleted) {
-                    remaining--;
-                } else {
-                    remaining++;
-                }
-                const newTaskList = {...taskList, remaining, updatedTasks}
-                setTaskList(newTaskList)
+                setTasks(updatedTasks)
             })
             .catch(e => console.log(e))
 
@@ -114,12 +106,12 @@ function TasksComponent({id}: TasksComponentProps) {
     return <div className="task-container">
         <div className="task-header">
             <h2>{taskList.name}</h2>
-            <p>{taskList.remaining} tasks remaining</p>
+            <p>{remaining} tasks remaining</p>
         </div>
 
         <div className="task-content">
             <ul className="task-items">
-                <RenderedTasks taskList={taskList} handleToggle={handleToggle}/>
+                <RenderedTasks tasks={tasks} handleToggle={handleToggle}/>
             </ul>
 
             <div className="plus-input">

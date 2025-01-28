@@ -109,7 +109,7 @@ function TaskListComponent() {
         <div className="details-container">
             {selectedList ?
                 <>
-                    <TasksComponent id={selectedList.id}/>
+                    <TasksComponent taskList={selectedList}/>
                     <div className="buttons">
                         <button type="button">Clear completed tasks</button>
                         <button type="button" onClick={() => deleteTaskList(selectedList)}>Delete list</button>
