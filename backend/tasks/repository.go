@@ -161,11 +161,31 @@ func (repo TaskRepository) DeleteTaskList(ctx context.Context, taskListId int) e
 }
 
 func (repo TaskRepository) DeleteCompletedTasks(ctx context.Context, taskListId int) error {
-	query := `DELETE FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
+
 	args := pgx.NamedArgs{
 		"taskListId": taskListId,
 	}
+	/*	completedTasksQuery := `SELECT id, name, completed FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
+
+		rows, err := repo.db.Query(ctx, completedTasksQuery, args)
+		if err != nil {
+			return nil, err
+		}
+
+		var tasks []Task
+
+		for rows.Next() {
+			task := Task{}
+			if err := rows.Scan(&task.Id, &task.Name, &task.IsCompleted); err != nil {
+				return nil, err
+			}
+			tasks = append(tasks, task)
+		}
+	*/
+	query := `DELETE FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
 
 	_, err := repo.db.Exec(ctx, query, args)
 	return err
+
+	//return tasks, nil
 }
