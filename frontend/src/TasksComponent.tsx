@@ -135,8 +135,8 @@ function TasksComponent({taskList, deleteTaskList}: TasksComponentProps) {
         </div>
 
         <div className="buttons">
-            <button type="button" onClick={deleteCompletedTasks}>Clear completed tasks</button>
-            <button type="button" onClick={() => deleteTaskList(taskList)}>Delete list</button>
+            <button type="button" className="btn" onClick={deleteCompletedTasks}>Clear completed tasks</button>
+            <button type="button" className="btn" onClick={() => deleteTaskList(taskList)}>Delete list</button>
         </div>
     </div>
 }
