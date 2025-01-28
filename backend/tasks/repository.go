@@ -159,3 +159,13 @@ func (repo TaskRepository) DeleteTaskList(ctx context.Context, taskListId int) e
 	_, err := repo.db.Exec(ctx, query, args)
 	return err
 }
+
+func (repo TaskRepository) DeleteCompletedTasks(ctx context.Context, taskListId int) error {
+	query := `DELETE FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
+	args := pgx.NamedArgs{
+		"taskListId": taskListId,
+	}
+
+	_, err := repo.db.Exec(ctx, query, args)
+	return err
+}

@@ -230,6 +230,24 @@ func ignoreCors(n http.Handler) http.Handler {
 	})
 }
 
+func completedTasksHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	taskListId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
+	if idAtoiErr != nil {
+		http.Error(w, "task list not found", http.StatusNotFound)
+		return
+	}
+
+	if err := taskRepository.DeleteCompletedTasks(context.Background(), taskListId); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
 	mux := http.NewServeMux()
 
@@ -250,6 +268,7 @@ func main() {
 	mux.HandleFunc("/tasklists/{id}/tasks", createTaskHandler)
 	mux.HandleFunc("/tasklists/{id}", taskListHandler)
 	mux.HandleFunc("/tasks/{id}", taskHandler)
+	mux.HandleFunc("/tasklists/{id}/tasks/completed", completedTasksHandler)
 	if err := http.ListenAndServe(":8080", ignoreCors(mux)); err != nil {
 		fmt.Fprintf(os.Stderr, "couldn't start server: %v\n", err)
 		os.Exit(1)
