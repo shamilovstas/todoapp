@@ -20,6 +20,20 @@
     list-style: circle inside;
 }
 
+.task-list li {
+    cursor: pointer;
+}
+
+.task-list li:not(:last-child) {
+    margin-bottom: 4px;
+}
+
 .active {
     font-weight: 700;
+}
+
+.buttons {
+    display: flex;
+    margin-top: 10px;
+    justify-content: space-evenly;
 }

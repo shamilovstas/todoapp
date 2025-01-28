@@ -1,7 +1,6 @@
 import './TaskList.css'
 import React, {ChangeEvent, useEffect, useState} from "react";
-import {Navigate, NavLink, Route, Routes} from "react-router";
-import {TaskList, apiUrl} from "./types.ts";
+import {apiUrl, TaskList} from "./types.ts";
 import TasksComponent from "./TasksComponent.tsx";
 
 interface InputProps {
@@ -24,18 +23,30 @@ function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
         value={input}/>
 }
 
-function List({list}: { list: TaskList[] }) {
-    return list.map((item) => <li key={item.id}>
-        <NavLink
-            className={({isActive}) => ["task-list-link", isActive ? "active" : ""].join(" ")}
-            to={`/tasklists/${item.id}`}>{item.name}
-        </NavLink>
-    </li>)
+interface ListProps {
+    list: TaskList[];
+    selectedId: number | undefined;
+    onClick: (t: TaskList) => void;
+}
+
+function List({list, selectedId, onClick}: ListProps) {
+    return list.map(
+        (item) =>
+            <li
+                key={item.id}
+                className={item.id === selectedId ? "active" : ""}
+                onClick={() => {
+                    onClick(item)
+                }}>
+                {item.name}
+            </li>
+    )
 }
 
 function TaskListComponent() {
 
     const [list, setList] = useState<TaskList[]>([]);
+    const [selectedList, setSelectedList] = useState<TaskList | null>();
     const [input, setInput] = useState<string>('')
 
     useEffect(() => {
@@ -74,19 +85,39 @@ function TaskListComponent() {
         }
     }
 
+    const deleteTaskList = (taskList: TaskList) => {
+        fetch(`${apiUrl}/tasklists/${taskList.id}`, {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json"}
+        })
+            .then(() => {
+                setList(list.filter((task) => task.id !== taskList.id))
+                setSelectedList(null)
+            })
+            .catch(err => console.log(err))
+    }
+
     return <div className="tasklist-container">
         <div className="list-container">
             <h1>My lists</h1>
-            <ul className="task-list"><List list={list}/></ul>
+            <ul className="task-list"><List list={list} selectedId={selectedList?.id}
+                                            onClick={(t: TaskList) => setSelectedList(t)}/></ul>
             <div className="plus-input">
                 <TaskListInput input={input} handleChange={handleInput} onKeyUp={addTaskList}/>
             </div>
         </div>
         <div className="details-container">
-            <Routes>
-                <Route path="/" element={<Navigate to={`/tasklists/1`} replace /> }/>
-                <Route path="/tasklists/:id" element={<TasksComponent/>}/>
-            </Routes>
+            {selectedList ?
+                <>
+                    <TasksComponent id={selectedList.id}/>
+                    <div className="buttons">
+                        <button type="button">Clear completed tasks</button>
+                        <button type="button" onClick={() => deleteTaskList(selectedList)}>Delete list</button>
+                    </div>
+                </>
+                : null
+            }
+
         </div>
     </div>
 }

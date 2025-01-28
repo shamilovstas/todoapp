@@ -1,6 +1,5 @@
 import './Tasks.css'
 import React, {ChangeEvent, useEffect, useState} from "react";
-import {useParams} from "react-router";
 import {Task, TaskList, apiUrl} from "./types.ts";
 
 interface TaskListProps {
@@ -37,16 +36,28 @@ function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
         value={input}/>
 }
 
-function TasksComponent() {
+interface TasksComponentProps {
+    id?: number
+}
 
-    const {id} = useParams()
+function TasksComponent({id}: TasksComponentProps) {
+
     const [taskList, setTaskList] = useState<TaskList>({id: -1, name: "", tasks: [], remaining: 0});
     const [input, setInput] = useState<string>('')
 
+    useEffect(() => {
+        fetch(`${apiUrl}/tasklists/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                setTaskList(data)
+            })
+            .catch(error => console.log(error))
+    }, [id])
+
     const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value)
-    }
 
+    }
     const saveTask = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key !== 'Enter') {
             return;
@@ -66,16 +77,8 @@ function TasksComponent() {
                 })
                 .catch(error => console.log(error))
         }
-    }
 
-    useEffect(() => {
-        fetch(`${apiUrl}/tasklists/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                setTaskList(data)
-            })
-            .catch(error => console.log(error))
-    }, [id])
+    }
 
     const handleToggle = (oldTask: Task, isCompleted: boolean) => {
         oldTask.completed = isCompleted;
@@ -97,9 +100,9 @@ function TasksComponent() {
 
                 let remaining = taskList.remaining;
                 if (isCompleted) {
-                    remaining --;
+                    remaining--;
                 } else {
-                    remaining ++;
+                    remaining++;
                 }
                 const newTaskList = {...taskList, remaining, updatedTasks}
                 setTaskList(newTaskList)
@@ -123,8 +126,6 @@ function TasksComponent() {
                 <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
             </div>
         </div>
-
-
     </div>
 }
 
