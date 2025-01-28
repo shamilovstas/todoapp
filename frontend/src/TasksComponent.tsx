@@ -83,7 +83,7 @@ function TasksComponent({id}: TasksComponentProps) {
     const handleToggle = (oldTask: Task, isCompleted: boolean) => {
         oldTask.completed = isCompleted;
 
-        fetch(apiUrl + "/tasks", {
+        fetch(apiUrl + `/tasks/${oldTask.id}`, {
             method: "PUT",
             body: JSON.stringify(oldTask),
             headers: {"Content-Type": "application/json"}
