@@ -116,24 +116,26 @@ function TasksComponent({taskList, deleteTaskList}: TasksComponentProps) {
             .catch(e => console.log(e))
     }
 
-    return <div className="task-container">
-        <div className="task-header">
-            <h2>{taskList.name}</h2>
-            <p>{remaining} tasks remaining</p>
-        </div>
+    return <div className="task-details-area">
+        <div className="task-container">
+            <div className="task-header">
+                <h2>{taskList.name}</h2>
+                <p>{remaining} tasks remaining</p>
+            </div>
 
-        <div className="task-content">
-            <ul className="task-items">
-                <RenderedTasks tasks={tasks} handleToggle={handleToggle}/>
-            </ul>
+            <div className="task-content">
+                <ul className="task-items">
+                    <RenderedTasks tasks={tasks} handleToggle={handleToggle}/>
+                </ul>
 
-            <div className="plus-input">
-                <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
+                <div className="plus-input">
+                    <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
+                </div>
             </div>
         </div>
 
         <div className="buttons">
-            <button type="button" onClick={() => deleteCompletedTasks()}>Clear completed tasks</button>
+            <button type="button" onClick={deleteCompletedTasks}>Clear completed tasks</button>
             <button type="button" onClick={() => deleteTaskList(taskList)}>Delete list</button>
         </div>
     </div>
