@@ -107,17 +107,7 @@ function TaskListComponent() {
             </div>
         </div>
         <div className="details-container">
-            {selectedList ?
-                <>
-                    <TasksComponent taskList={selectedList}/>
-                    <div className="buttons">
-                        <button type="button">Clear completed tasks</button>
-                        <button type="button" onClick={() => deleteTaskList(selectedList)}>Delete list</button>
-                    </div>
-                </>
-                : null
-            }
-
+            {selectedList ? <TasksComponent taskList={selectedList} deleteTaskList={deleteTaskList}/> : null}
         </div>
     </div>
 }

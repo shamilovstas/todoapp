@@ -37,10 +37,11 @@ function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
 }
 
 interface TasksComponentProps {
-    taskList: TaskList
+    taskList: TaskList,
+    deleteTaskList: (task: TaskList) => void,
 }
 
-function TasksComponent({taskList}: TasksComponentProps) {
+function TasksComponent({taskList, deleteTaskList}: TasksComponentProps) {
 
     const [tasks, setTasks] = useState<Task[]>([])
     const [input, setInput] = useState<string>('')
@@ -103,6 +104,18 @@ function TasksComponent({taskList}: TasksComponentProps) {
 
     }
 
+    const deleteCompletedTasks = () => {
+        fetch(apiUrl + `/tasklists/${taskList.id}/tasks/completed`, {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json"}
+        })
+            .then(res => res.json())
+            .then(taskList => {
+                setTasks(taskList.tasks)
+            })
+            .catch(e => console.log(e))
+    }
+
     return <div className="task-container">
         <div className="task-header">
             <h2>{taskList.name}</h2>
@@ -117,6 +130,11 @@ function TasksComponent({taskList}: TasksComponentProps) {
             <div className="plus-input">
                 <NewTaskInput onKeyUp={saveTask} handleChange={handleInput} input={input}/>
             </div>
+        </div>
+
+        <div className="buttons">
+            <button type="button" onClick={() => deleteCompletedTasks()}>Clear completed tasks</button>
+            <button type="button" onClick={() => deleteTaskList(taskList)}>Delete list</button>
         </div>
     </div>
 }
