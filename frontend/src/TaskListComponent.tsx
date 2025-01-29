@@ -11,12 +11,10 @@ interface InputProps {
 
 function TaskListInput({input, handleChange, onKeyUp}: InputProps) {
 
-    const placeholder = "Enter task"
+    const placeholder = "Create task list"
     return <input
         className="tasklist-input input-light"
         placeholder={placeholder}
-        // onFocus={(e) => e.target.placeholder = ""}
-        // onBlur={(e) => e.target.placeholder = placeholder}
         type="text"
         onChange={handleChange}
         onKeyUp={onKeyUp}

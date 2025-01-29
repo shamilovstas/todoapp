@@ -30,7 +30,7 @@ interface TaskInputProps {
 
 function NewTaskInput({input, handleChange, onKeyUp}: TaskInputProps) {
     return <input
-        className="input-dark"
+        placeholder="Enter task"
         onChange={handleChange}
         onKeyUp={onKeyUp}
         value={input}/>
