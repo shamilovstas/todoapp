@@ -5,20 +5,37 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"todo-api/tasks"
 )
 
-var ErrTaskListNotFound = errors.New("task list not found")
-var ErrTaskNotFound = errors.New("task not found")
+var ErrTaskListNotFound = errors.New("tasks list not found")
+var ErrTaskNotFound = errors.New("tasks not found")
 
-type TaskRepository struct {
+type TaskRepository interface {
+	GetTasks(context.Context, int) ([]tasks.Task, error)
+	InsertTask(context.Context, tasks.Task, int) (int, error)
+	UpdateTask(context.Context, int, tasks.Task) (int, error)
+	DeleteTask(context.Context, int) error
+	TaskListRepository
+}
+
+type TaskListRepository interface {
+	GetTaskLists(context.Context) ([]tasks.TaskList, error)
+	InsertTaskList(context.Context, tasks.TaskList) (int, error)
+	GetTaskListById(context.Context, int) (tasks.TaskList, error)
+	DeleteTaskList(context.Context, int) error
+	DeleteCompletedTasks(context.Context, int) error
+}
+
+type pgTaskRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewTaskRepository(db *pgxpool.Pool) *TaskRepository {
-	return &TaskRepository{db: db}
+func NewTaskRepository(db *pgxpool.Pool) TaskRepository {
+	return &pgTaskRepository{db: db}
 }
 
-func (repo TaskRepository) GetTaskLists(ctx context.Context) ([]TaskList, error) {
+func (repo pgTaskRepository) GetTaskLists(ctx context.Context) ([]tasks.TaskList, error) {
 	query := `SELECT id, name FROM tasklists`
 	rows, err := repo.db.Query(ctx, query)
 	if err != nil {
@@ -27,7 +44,7 @@ func (repo TaskRepository) GetTaskLists(ctx context.Context) ([]TaskList, error)
 
 	defer rows.Close()
 
-	taskLists := make([]TaskList, 0)
+	taskLists := make([]tasks.TaskList, 0)
 	for rows.Next() {
 		var id int
 		var name string
@@ -36,13 +53,13 @@ func (repo TaskRepository) GetTaskLists(ctx context.Context) ([]TaskList, error)
 			return nil, err
 		}
 
-		taskList := NewTaskList(id, name)
+		taskList := tasks.NewTaskList(id, name)
 		taskLists = append(taskLists, *taskList)
 	}
 	return taskLists, nil
 }
 
-func (repo TaskRepository) InsertTaskList(ctx context.Context, tl TaskList) (int, error) {
+func (repo pgTaskRepository) InsertTaskList(ctx context.Context, tl tasks.TaskList) (int, error) {
 	query := `INSERT INTO tasklists (name) VALUES (@taskName) RETURNING id`
 	args := pgx.NamedArgs{
 		"taskName": tl.Name,
@@ -58,13 +75,13 @@ func (repo TaskRepository) InsertTaskList(ctx context.Context, tl TaskList) (int
 	return insertedId, nil
 }
 
-func (repo TaskRepository) GetTaskListById(id int) (TaskList, error) {
+func (repo pgTaskRepository) GetTaskListById(ctx context.Context, id int) (tasks.TaskList, error) {
 	query := `SELECT name FROM tasklists WHERE id=@taskListId`
 	args := pgx.NamedArgs{"taskListId": id}
-	row := repo.db.QueryRow(context.Background(), query, args)
+	row := repo.db.QueryRow(ctx, query, args)
 	var name string
 	var taskListError error
-	var taskList TaskList
+	var taskList tasks.TaskList
 	if err := row.Scan(&name); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			taskListError = ErrTaskListNotFound
@@ -72,12 +89,12 @@ func (repo TaskRepository) GetTaskListById(id int) (TaskList, error) {
 			taskListError = err
 		}
 	} else {
-		taskList = *NewTaskList(id, name)
+		taskList = *tasks.NewTaskList(id, name)
 	}
 	return taskList, taskListError
 }
 
-func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, error) {
+func (repo pgTaskRepository) GetTasks(ctx context.Context, listId int) ([]tasks.Task, error) {
 	args := pgx.NamedArgs{"listId": listId}
 	query := `SELECT id, name, completed FROM tasks WHERE tasks.listId=@listId`
 	rows, err := repo.db.Query(ctx, query, args)
@@ -85,9 +102,9 @@ func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, er
 	if err != nil {
 		return nil, err
 	}
-	taskArray := make([]Task, 0)
+	taskArray := make([]tasks.Task, 0)
 	for rows.Next() {
-		var task Task
+		var task tasks.Task
 		if err := rows.Scan(&task.Id, &task.Name, &task.IsCompleted); err != nil {
 			return nil, err
 		}
@@ -96,7 +113,7 @@ func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, er
 	return taskArray, nil
 }
 
-func (repo TaskRepository) InsertTask(ctx context.Context, task Task, listId int) (int, error) {
+func (repo pgTaskRepository) InsertTask(ctx context.Context, task tasks.Task, listId int) (int, error) {
 	query := `INSERT INTO tasks (name, listId, completed) VALUES (@taskName, @listId, @isCompleted) RETURNING id`
 	args := pgx.NamedArgs{
 		"taskName":    task.Name,
@@ -104,6 +121,7 @@ func (repo TaskRepository) InsertTask(ctx context.Context, task Task, listId int
 		"isCompleted": task.IsCompleted,
 	}
 
+	// Add transactional check
 	row := repo.db.QueryRow(ctx, query, args)
 	insertedId := -1
 
@@ -114,7 +132,7 @@ func (repo TaskRepository) InsertTask(ctx context.Context, task Task, listId int
 	return insertedId, nil
 }
 
-func (repo TaskRepository) UpdateTask(ctx context.Context, taskId int, task Task) (int, error) {
+func (repo pgTaskRepository) UpdateTask(ctx context.Context, taskId int, task tasks.Task) (int, error) {
 	query := `UPDATE tasks SET name=@taskName, completed=@isCompleted WHERE tasks.id=@taskId RETURNING id`
 	args := pgx.NamedArgs{
 		"taskName":    task.Name,
@@ -136,7 +154,7 @@ func (repo TaskRepository) UpdateTask(ctx context.Context, taskId int, task Task
 	return insertedId, updateError
 }
 
-func (repo TaskRepository) DeleteTask(ctx context.Context, taskId int) error {
+func (repo pgTaskRepository) DeleteTask(ctx context.Context, taskId int) error {
 	query := `DELETE FROM tasks WHERE tasks.id=@taskId`
 	args := pgx.NamedArgs{
 		"taskId": taskId,
@@ -146,7 +164,7 @@ func (repo TaskRepository) DeleteTask(ctx context.Context, taskId int) error {
 	return err
 }
 
-func (repo TaskRepository) DeleteTaskList(ctx context.Context, taskListId int) error {
+func (repo pgTaskRepository) DeleteTaskList(ctx context.Context, taskListId int) error {
 	query := `DELETE FROM taskLists WHERE taskLists.id=@taskListId`
 	args := pgx.NamedArgs{
 		"taskListId": taskListId,
@@ -155,7 +173,7 @@ func (repo TaskRepository) DeleteTaskList(ctx context.Context, taskListId int) e
 	return err
 }
 
-func (repo TaskRepository) DeleteCompletedTasks(ctx context.Context, taskListId int) error {
+func (repo pgTaskRepository) DeleteCompletedTasks(ctx context.Context, taskListId int) error {
 
 	args := pgx.NamedArgs{
 		"taskListId": taskListId,

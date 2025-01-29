@@ -2,215 +2,75 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
-	"todo-api/api"
+	"todo-api/api/resource/tasks"
 	"todo-api/database"
-	"todo-api/tasks"
+	"todo-api/middleware"
 )
 
-var taskRepository tasks.TaskRepository
+//type TaskListResponse struct {
+//	TaskLists []tasks.TaskList `json:"taskLists"`
+//}
+//
+//type TasksResponse struct {
+//	Id             int          `json:"id"`
+//	Name           string       `json:"name"`
+//	Tasks          []tasks.Task `json:"tasks"`
+//	RemainingTasks int          `json:"remaining"`
+//}
 
-type TaskListResponse struct {
-	TaskLists []tasks.TaskList `json:"taskLists"`
-}
-
-type TasksResponse struct {
-	Id             int          `json:"id"`
-	Name           string       `json:"name"`
-	Tasks          []tasks.Task `json:"tasks"`
-	RemainingTasks int          `json:"remaining"`
-}
-
-func tasklistsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method == "GET" {
-		taskLists, err := taskRepository.GetTaskLists(context.Background())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		response := TaskListResponse{TaskLists: taskLists}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if r.Method == "POST" {
-		var tl tasks.TaskList
-
-		err := json.NewDecoder(r.Body).Decode(&tl)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		id, err := taskRepository.InsertTaskList(context.Background(), tl)
-		tl.Id = id
-
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(tl); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+func taskHandler(api *tasks.Api) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			api.DeleteTask(w, r)
+		case http.MethodPut:
+			api.UpdateTask(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}
 }
 
-func getTaskList(w http.ResponseWriter, listId int) error {
-	taskList, err := taskRepository.GetTaskListById(listId)
-	if err != nil {
-		return api.NewHttpError(http.StatusNotFound, fmt.Errorf("task list not found: %w", err))
-	}
-	taskArray, err := taskRepository.GetTasks(context.Background(), listId)
-	if err != nil {
-		return err
-	}
-	taskList.Tasks = taskArray
-	response := TasksResponse{
-		Id:             taskList.Id,
-		Name:           taskList.Name,
-		Tasks:          taskList.Tasks,
-		RemainingTasks: taskList.GetRemainingTasksCount(),
-	}
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		return err
-	}
-	return nil
-}
-
-func postTask(w http.ResponseWriter, r *http.Request, listId int) error {
-	var task tasks.Task
-
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		return err
-	}
-
-	id, err := taskRepository.InsertTask(context.Background(), task, listId)
-	if err != nil {
-		return err
-	}
-	task.Id = id
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(task); err != nil {
-		return err
-	}
-	return nil
-}
-
-func checkTaskListExists(id int) error {
-	_, err := taskRepository.GetTaskListById(id)
-	if err != nil {
-		if errors.Is(err, tasks.ErrTaskListNotFound) {
-			return api.NewHttpError(http.StatusNotFound, err)
-		} else {
-			return api.NewHttpError(http.StatusInternalServerError, err)
-		}
-	}
-	return nil
-}
-
-func deleteTaskList(w http.ResponseWriter, taskListId int) error {
-	return taskRepository.DeleteTaskList(context.Background(), taskListId)
-}
-
-func taskListHandler(w http.ResponseWriter, r *http.Request) {
-	listId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
-	if idAtoiErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := checkTaskListExists(listId); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-
-	}
-
-	switch r.Method {
-	case "GET":
-		if err := getTaskList(w, listId); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-	case "DELETE":
-		if err := deleteTaskList(w, listId); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+func tasksHandler(api *tasks.Api) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			api.UpdateTask(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}
 }
 
-func createTaskHandler(w http.ResponseWriter, r *http.Request) {
-	listId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
-	if idAtoiErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := checkTaskListExists(listId); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	if err := postTask(w, r, listId); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func taskHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "PUT":
-		if err := updateTask(w, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+func taskListHandler(api *tasks.Api) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			api.GetTaskListById(w, r)
+		case http.MethodDelete:
+			api.DeleteTaskList(w, r)
+		case http.MethodPost:
+			api.CreateTaskList(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
-	case "DELETE":
-		if err := deleteTask(w, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func taskListsHandler(api *tasks.Api) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			api.GetTaskLists(w, r)
+		case http.MethodPost:
+			api.CreateTaskList(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
-	default:
-		w.WriteHeader(http.StatusBadRequest)
 	}
-}
-
-func updateTask(w http.ResponseWriter, r *http.Request) error {
-	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
-	if idAtoiErr != nil {
-		return api.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
-	}
-	var task tasks.Task
-
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		return err
-	}
-
-	id, err := taskRepository.UpdateTask(context.Background(), taskId, task)
-	if err != nil {
-		return err
-	}
-	task.Id = id
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(task); err != nil {
-		return err
-	}
-	return nil
-}
-
-func deleteTask(w http.ResponseWriter, r *http.Request) error {
-	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
-	if idAtoiErr != nil {
-		return api.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
-	}
-
-	err := taskRepository.DeleteTask(context.Background(), taskId)
-	if err == nil {
-		w.WriteHeader(http.StatusOK)
-	}
-	return err
 }
 
 func ignoreCors(n http.Handler) http.Handler {
@@ -231,27 +91,6 @@ func ignoreCors(n http.Handler) http.Handler {
 	})
 }
 
-func completedTasksHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "DELETE" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	taskListId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
-	if idAtoiErr != nil {
-		http.Error(w, "task list not found", http.StatusNotFound)
-		return
-	}
-
-	if err := taskRepository.DeleteCompletedTasks(context.Background(), taskListId); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if err := getTaskList(w, taskListId); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func main() {
 	mux := http.NewServeMux()
 
@@ -266,14 +105,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	taskRepository = *tasks.NewTaskRepository(pool)
+	api := tasks.New(pool)
 
-	mux.HandleFunc("/tasklists", tasklistsHandler)
-	mux.HandleFunc("/tasklists/{id}/tasks", createTaskHandler)
-	mux.HandleFunc("/tasklists/{id}", taskListHandler)
-	mux.HandleFunc("/tasks/{id}", taskHandler)
-	mux.HandleFunc("/tasklists/{id}/tasks/completed", completedTasksHandler)
-	if err := http.ListenAndServe(":8080", ignoreCors(mux)); err != nil {
+	mux.HandleFunc("/tasklists", taskListsHandler(api))
+	mux.HandleFunc("/tasklists/{id}/tasks", api.CreateTask)
+	mux.HandleFunc("/tasklists/{id}", taskListHandler(api))
+	mux.HandleFunc("/tasks/{id}", taskHandler(api))
+	mux.HandleFunc("/tasklists/{id}/tasks/completed", api.DeleteCompletedTasks)
+	if err := http.ListenAndServe(":8080", middleware.AddMiddleware(mux)); err != nil {
 		fmt.Fprintf(os.Stderr, "couldn't start server: %v\n", err)
 		os.Exit(1)
 	}
