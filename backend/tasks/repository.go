@@ -2,9 +2,13 @@ package tasks
 
 import (
 	"context"
+	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrTaskListNotFound = errors.New("task list not found")
+var ErrTaskNotFound = errors.New("task not found")
 
 type TaskRepository struct {
 	db *pgxpool.Pool
@@ -59,27 +63,18 @@ func (repo TaskRepository) GetTaskListById(id int) (TaskList, error) {
 	args := pgx.NamedArgs{"taskListId": id}
 	row := repo.db.QueryRow(context.Background(), query, args)
 	var name string
+	var taskListError error
+	var taskList TaskList
 	if err := row.Scan(&name); err != nil {
-		return TaskList{}, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			taskListError = ErrTaskListNotFound
+		} else {
+			taskListError = err
+		}
+	} else {
+		taskList = *NewTaskList(id, name)
 	}
-	return *NewTaskList(id, name), nil
-}
-
-func (repo TaskRepository) IsTaskListExists(id int) (bool, error) {
-	query := `SELECT id FROM tasklists WHERE id=@taskListId`
-	args := pgx.NamedArgs{"taskListId": id}
-	rows, err := repo.db.Query(context.Background(), query, args)
-	defer rows.Close()
-	if err != nil {
-		return false, err
-	}
-
-	rowsCount := 0
-	for rows.Next() {
-		rowsCount++
-	}
-
-	return rowsCount != 0, nil
+	return taskList, taskListError
 }
 
 func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, error) {
@@ -92,16 +87,11 @@ func (repo TaskRepository) GetTasks(ctx context.Context, listId int) ([]Task, er
 	}
 	taskArray := make([]Task, 0)
 	for rows.Next() {
-		var id int
-		var name string
-		var completed bool
-
-		if err := rows.Scan(&id, &name, &completed); err != nil {
+		var task Task
+		if err := rows.Scan(&task.Id, &task.Name, &task.IsCompleted); err != nil {
 			return nil, err
 		}
-
-		task := NewTask(id, name, completed)
-		taskArray = append(taskArray, *task)
+		taskArray = append(taskArray, task)
 	}
 	return taskArray, nil
 }
@@ -134,11 +124,16 @@ func (repo TaskRepository) UpdateTask(ctx context.Context, taskId int, task Task
 
 	row := repo.db.QueryRow(ctx, query, args)
 	insertedId := -1
+	var updateError error
 
 	if err := row.Scan(&insertedId); err != nil {
-		return -1, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			updateError = ErrTaskNotFound
+		} else {
+			updateError = err
+		}
 	}
-	return insertedId, nil
+	return insertedId, updateError
 }
 
 func (repo TaskRepository) DeleteTask(ctx context.Context, taskId int) error {
@@ -165,27 +160,8 @@ func (repo TaskRepository) DeleteCompletedTasks(ctx context.Context, taskListId 
 	args := pgx.NamedArgs{
 		"taskListId": taskListId,
 	}
-	/*	completedTasksQuery := `SELECT id, name, completed FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
-
-		rows, err := repo.db.Query(ctx, completedTasksQuery, args)
-		if err != nil {
-			return nil, err
-		}
-
-		var tasks []Task
-
-		for rows.Next() {
-			task := Task{}
-			if err := rows.Scan(&task.Id, &task.Name, &task.IsCompleted); err != nil {
-				return nil, err
-			}
-			tasks = append(tasks, task)
-		}
-	*/
 	query := `DELETE FROM tasks WHERE tasks.listId=@taskListId AND tasks.completed IS TRUE`
 
 	_, err := repo.db.Exec(ctx, query, args)
 	return err
-
-	//return tasks, nil
 }

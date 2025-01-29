@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"todo-api/apperrors"
+	"todo-api/api"
 	"todo-api/database"
 	"todo-api/tasks"
 )
@@ -64,7 +64,7 @@ func tasklistsHandler(w http.ResponseWriter, r *http.Request) {
 func getTaskList(w http.ResponseWriter, listId int) error {
 	taskList, err := taskRepository.GetTaskListById(listId)
 	if err != nil {
-		return apperrors.NewHttpError(http.StatusNotFound, fmt.Errorf("task list not found: %w", err))
+		return api.NewHttpError(http.StatusNotFound, fmt.Errorf("task list not found: %w", err))
 	}
 	taskArray, err := taskRepository.GetTasks(context.Background(), listId)
 	if err != nil {
@@ -104,12 +104,13 @@ func postTask(w http.ResponseWriter, r *http.Request, listId int) error {
 }
 
 func checkTaskListExists(id int) error {
-	taskListExists, err := taskRepository.IsTaskListExists(id)
+	_, err := taskRepository.GetTaskListById(id)
 	if err != nil {
-		return apperrors.NewHttpError(http.StatusInternalServerError, err)
-	}
-	if !taskListExists {
-		return apperrors.NewHttpError(http.StatusNotFound, errors.New("task list not found"))
+		if errors.Is(err, tasks.ErrTaskListNotFound) {
+			return api.NewHttpError(http.StatusNotFound, err)
+		} else {
+			return api.NewHttpError(http.StatusInternalServerError, err)
+		}
 	}
 	return nil
 }
@@ -179,7 +180,7 @@ func taskHandler(w http.ResponseWriter, r *http.Request) {
 func updateTask(w http.ResponseWriter, r *http.Request) error {
 	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
 	if idAtoiErr != nil {
-		return apperrors.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
+		return api.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
 	}
 	var task tasks.Task
 
@@ -202,7 +203,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) error {
 func deleteTask(w http.ResponseWriter, r *http.Request) error {
 	taskId, idAtoiErr := strconv.Atoi(r.PathValue("id"))
 	if idAtoiErr != nil {
-		return apperrors.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
+		return api.NewHttpError(http.StatusBadRequest, errors.New("task not found"))
 	}
 
 	err := taskRepository.DeleteTask(context.Background(), taskId)
