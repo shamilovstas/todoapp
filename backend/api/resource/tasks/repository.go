@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"todo-api/tasks"
 )
 
@@ -114,21 +115,39 @@ func (repo pgTaskRepository) GetTasks(ctx context.Context, listId int) ([]tasks.
 }
 
 func (repo pgTaskRepository) InsertTask(ctx context.Context, task tasks.Task, listId int) (int, error) {
+	tx, err := repo.db.Begin(ctx)
+	if err != nil {
+		return -1, err
+	}
+
+	tasklistExistsQuery := `SELECT EXISTS(SELECT 1 FROM tasklists WHERE tasklists.id=@listId FOR UPDATE)`
+	existsRow := tx.QueryRow(ctx, tasklistExistsQuery, pgx.NamedArgs{"listId": listId})
+	var exists bool
+	if err := existsRow.Scan(&exists); err != nil {
+		log.Printf("existsRow: %v\n", err)
+		return -1, err
+	}
+	if !exists {
+		return -1, ErrTaskListNotFound
+	}
+
 	query := `INSERT INTO tasks (name, listId, completed) VALUES (@taskName, @listId, @isCompleted) RETURNING id`
 	args := pgx.NamedArgs{
 		"taskName":    task.Name,
 		"listId":      listId,
 		"isCompleted": task.IsCompleted,
 	}
-
-	// Add transactional check
-	row := repo.db.QueryRow(ctx, query, args)
+	row := tx.QueryRow(ctx, query, args)
 	insertedId := -1
 
 	if err := row.Scan(&insertedId); err != nil {
+		tx.Rollback(ctx)
 		return -1, err
 	}
-
+	if err := tx.Commit(ctx); err != nil {
+		log.Printf("failed to commit transaction: %v\n", err)
+		return -1, err
+	}
 	return insertedId, nil
 }
 
