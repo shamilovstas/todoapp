@@ -7,7 +7,7 @@ const (
 	HeaderKeyContentValue = "application/json"
 )
 
-var Registry = [...]func(http.Handler) http.Handler{
+var Registry = []func(http.Handler) http.Handler{
 	ContentTypeMiddleware,
 }
 
