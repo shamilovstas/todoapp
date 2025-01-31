@@ -54,7 +54,7 @@ function TaskListComponent() {
                 const json = res.json()
                 return json;
             })
-            .then(json => json.taskLists)
+            .then(json => json.tasklists)
             .then(taskList => setList(taskList))
             .catch(err => console.log(err))
     }, [])

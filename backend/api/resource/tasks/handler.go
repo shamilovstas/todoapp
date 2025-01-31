@@ -15,6 +15,10 @@ type Api struct {
 	repository TaskRepository
 }
 
+type TaskListsResponse struct {
+	TaskLists []tasks.TaskList `json:"tasklists"`
+}
+
 func New(db *pgxpool.Pool) *Api {
 	return &Api{repository: NewTaskRepository(db)}
 }
@@ -164,8 +168,9 @@ func (api *Api) GetTaskLists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := TaskListsResponse{TaskLists: taskLists}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(taskLists); err != nil {
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		e.ServerError(w, e.RespErrJsonEncode)
 	}
 }
