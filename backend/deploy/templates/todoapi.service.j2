@@ -1,0 +1,10 @@
+[Unit]
+Description=To-Do list backend
+After=network.target
+
+[Service]
+ExecStart={{ bin_location }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

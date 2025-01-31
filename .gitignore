@@ -2,3 +2,5 @@
 backend/.idea
 frontend/.idea
 .env
+backend/build
+*box
