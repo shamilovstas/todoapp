@@ -3,6 +3,7 @@ Description=To-Do list backend
 After=network.target
 
 [Service]
+EnvironmentFile=/etc/todoapp/.env
 ExecStart={{ bin_location }}
 Restart=always
 

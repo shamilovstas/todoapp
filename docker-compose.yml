@@ -38,6 +38,9 @@ services:
         condition: service_completed_successfully
     ports:
       - "40000:40000"
+    environment:
+      DB_PASS: "somepass"
+      DB_HOST: "database"
   migrate:
     image: migrate/migrate
     volumes:

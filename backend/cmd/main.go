@@ -8,6 +8,7 @@ import (
 	"todo-api/api/resource/tasks"
 	"todo-api/database"
 	"todo-api/middleware"
+	"todo-api/utils"
 )
 
 //type TaskListResponse struct {
@@ -94,7 +95,23 @@ func ignoreCors(n http.Handler) http.Handler {
 func main() {
 	mux := http.NewServeMux()
 
-	pool, err := database.CreatePool()
+	dbPassword, err := utils.GetEnv("DB_PASS")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+	}
+
+	dbHost, err := utils.GetEnv("DB_HOST")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+	}
+	dbOptions := database.DatabaseOptions{
+		User:     utils.GetEnvWithDefault("DB_USER", "postgres"),
+		Password: dbPassword,
+		Host:     dbHost,
+		Port:     utils.GetEnvWithDefault("DB_PORT", "5432"),
+		Name:     utils.GetEnvWithDefault("DB_NAME", "postgres"),
+	}
+	pool, err := database.CreatePool(dbOptions)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to create database connection pool: %v\n", err)
 		os.Exit(1)
