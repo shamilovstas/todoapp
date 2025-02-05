@@ -1,0 +1,72 @@
+---
+- hosts: all
+  become: true
+  vars:
+    bin_location: /usr/local/bin/todoapi
+    user: todoapp-user
+
+  pre_tasks:
+    - name: Update cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Set timezone
+      community.general.timezone:
+        name: Europe/Kyiv
+
+  tasks:
+
+    # Backend tasks
+    - name: Create user
+      ansible.builtin.user:
+        name: "{{ user }}"
+        comment: "To-do app service user"
+        system: true
+
+    - name: Upload backend binary to destination
+      ansible.builtin.copy:
+        src: ../backend/build/todoapibin
+        dest: "{{ bin_location }}"
+        mode: "0700"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+    - name: Upload unit file
+      ansible.builtin.template:
+        src: templates/todoapi.service.j2
+        dest: /etc/systemd/system/todoapi.service
+#        validate: systemd-analyze verify %s
+
+    # Proxy tasks
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Upload nginx conf
+      ansible.builtin.copy:
+        src: todoapp.conf
+        dest: /etc/nginx/conf.d/
+      notify: restart_nginx
+
+    - name: Enable nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        enabled: true
+        state: started
+
+    # Frontend tasks
+    - name: Upload built frontend
+      ansible.builtin.copy:
+        src: ../frontend/dist/
+        dest: /usr/share/nginx/html/
+        mode: "0755"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
+  handlers:
+    - name: restart_nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded

@@ -5,11 +5,6 @@ packer {
       source  = "github.com/hashicorp/amazon"
     }
 
-    vagrant = {
-      version = ">= 1.1.1"
-      source = "github.com/hashicorp/vagrant"
-    }
-
     ansible = {
       version = "~> 1"
       source = "github.com/hashicorp/ansible"
@@ -46,6 +41,4 @@ build {
     user = "ubuntu"
     use_proxy = false
   }
-
-  post-processor "vagrant" {}
 }

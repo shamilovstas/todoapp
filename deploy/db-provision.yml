@@ -1,0 +1,38 @@
+# This Ansible playbook is used only in local environment for VM provisioning
+---
+- hosts: all
+  become: true
+
+  vars:
+    postgresql_python_library: python3-psycopg2
+    postgresql_databases:
+      - name: postgres
+        lc_collate: C.UTF-8
+        lc_ctype: C.UTF-8
+        login_password: "postgres"
+    postgresql_listen_addresses: "*"
+    postgresql_global_config_options:
+      - option: log_directory
+        value: 'log'
+      - option: listen_addresses
+        value: "{{ postgresql_listen_addresses | default('127.0.0.1') }}"
+  roles:
+    - role: geerlingguy.postgresql
+      become: true
+  pre_tasks:
+    - name: Update cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Set timezone
+      community.general.timezone:
+        name: Europe/Kyiv
+  tasks:
+    - name: Allow host login
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        regexp: "^host all all 0.0.0.0/0 md5"
+        insertbefore: "^host all all 127.0.0.1"
+        line: "host all all 0.0.0.0/0 md5"
+      notify: "restart postgresql"

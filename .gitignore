@@ -4,3 +4,4 @@ frontend/.idea
 .env
 backend/build
 *box
+*.vagrant/
