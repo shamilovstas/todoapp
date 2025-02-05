@@ -3,7 +3,7 @@
   become: true
   vars:
     bin_name: todoapi
-    user: todoapp-user
+    user: todoapi-user
 
     golang_migrate_version: "4.18.2"
 
@@ -41,7 +41,7 @@
 #        validate: systemd-analyze verify %s
 
     # Migrations
-    - name: Upload migration scripts
+    - name: Upload SQL migration scripts
       ansible.builtin.copy:
         src: ../backend/database/migrations/
         dest: /usr/share/{{ bin_name }}/sql 
@@ -58,6 +58,14 @@
         creates: "/usr/local/bin/migrate"
       register: golang_migrate
 
+    - name: Upload migration script
+      copy:
+        src: migrate.sh
+        dest: "/usr/local/bin/todoapi-migrate.sh"
+        mode: "0700"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+
     # Proxy tasks
     - name: Install nginx
       apt:
@@ -66,7 +74,7 @@
 
     - name: Upload nginx conf
       ansible.builtin.copy:
-        src: todoapp.conf
+        src: todoapi.conf
         dest: /etc/nginx/conf.d/
       notify: restart_nginx
 
