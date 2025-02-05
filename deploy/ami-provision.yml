@@ -2,8 +2,10 @@
 - hosts: all
   become: true
   vars:
-    bin_location: /usr/local/bin/todoapi
+    bin_name: todoapi
     user: todoapp-user
+
+    golang_migrate_version: "4.18.2"
 
   pre_tasks:
     - name: Update cache
@@ -27,7 +29,7 @@
     - name: Upload backend binary to destination
       ansible.builtin.copy:
         src: ../backend/build/todoapibin
-        dest: "{{ bin_location }}"
+        dest: "/usr/local/bin/{{ bin_name }}"
         mode: "0700"
         owner: "{{ user }}"
         group: "{{ user }}"
@@ -37,6 +39,24 @@
         src: templates/todoapi.service.j2
         dest: /etc/systemd/system/todoapi.service
 #        validate: systemd-analyze verify %s
+
+    # Migrations
+    - name: Upload migration scripts
+      ansible.builtin.copy:
+        src: ../backend/database/migrations/
+        dest: /usr/share/{{ bin_name }}/sql 
+        mode: "0600"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+    
+    - name: Download golang-migrate
+      ansible.builtin.unarchive:
+        remote_src: true
+        src: "https://github.com/golang-migrate/migrate/releases/download/v{{ golang_migrate_version }}/migrate.linux-amd64.tar.gz"
+        include: "migrate"
+        dest: "/usr/local/bin"
+        creates: "/usr/local/bin/migrate"
+      register: golang_migrate
 
     # Proxy tasks
     - name: Install nginx
