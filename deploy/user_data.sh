@@ -6,5 +6,8 @@ mkdir -p /etc/todoapi
 cat << EOF > /etc/todoapi/.env
 DB_HOST={db_address}
 DB_PORT={db_port}
+DB_PASS={db_pass}
+DB_USER={db_user}
+DB_NAME={db_user}
 EOF
 systemctl enable --now todoapi
