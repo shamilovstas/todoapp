@@ -5,3 +5,7 @@ frontend/.idea
 backend/build
 *box
 *.vagrant/
+*.terraform/
+*.tfstate
+*.tfstate.backup
+*.pem
