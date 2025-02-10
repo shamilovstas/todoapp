@@ -144,9 +144,9 @@ resource "aws_instance" "backend-instance" {
     db_user    = var.db_username,
     db_name    = var.db_name
   })
-  key_name        = data.aws_key_pair.ssh-key.key_name
-  security_groups = [aws_security_group.instance-sg.id]
-  subnet_id       = aws_subnet.public_subnet.id
+  key_name               = data.aws_key_pair.ssh-key.key_name
+  vpc_security_group_ids = [aws_security_group.instance-sg.id]
+  subnet_id              = aws_subnet.public_subnet.id
   root_block_device {
     delete_on_termination = true
     volume_size           = 20
