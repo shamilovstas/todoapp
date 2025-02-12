@@ -109,6 +109,15 @@ resource "aws_vpc_security_group_ingress_rule" "allow_http_in" {
   security_group_id = aws_security_group.instance-sg.id
 }
 
+resource "aws_vpc_security_group_ingress_rule" "allow_https_in" {
+  description       = "Allow HTTPS"
+  from_port         = "443"
+  to_port           = "443"
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+  security_group_id = aws_security_group.instance-sg.id
+}
+
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh_in" {
   description       = "Allow SSH"
   from_port         = "22"
