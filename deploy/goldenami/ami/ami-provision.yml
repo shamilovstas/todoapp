@@ -28,7 +28,7 @@
 
     - name: Upload backend binary to destination
       ansible.builtin.copy:
-        src: ../../backend/build/todoapibin
+        src: ../../../backend/build/todoapibin
         dest: "/usr/local/bin/{{ bin_name }}"
         mode: "0700"
         owner: "{{ user }}"
@@ -43,7 +43,7 @@
     # Migrations
     - name: Upload SQL migration scripts
       ansible.builtin.copy:
-        src: "../../backend/database/migrations/"
+        src: "../../../backend/database/migrations/"
         dest: "/usr/share/{{ bin_name }}/sql"
         mode: "0600"
         owner: "{{ user }}"
@@ -87,7 +87,7 @@
     # Frontend tasks
     - name: Upload built frontend
       ansible.builtin.copy:
-        src: ../../frontend/dist/
+        src: ../../../frontend/dist/
         dest: /usr/share/nginx/html/
         mode: "0755"
         owner: "{{ user }}"
