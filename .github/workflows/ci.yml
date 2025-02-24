@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: todoapp-backend
+  IMAGE: ${{ github.repository }}/todoapp-backend
 jobs:
   build-images:
     runs-on: ubuntu-latest
